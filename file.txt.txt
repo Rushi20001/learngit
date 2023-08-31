@@ -1,1 +1,103 @@
-hello
+quantity*price
+SELECT
+    Orderid,
+    productid,
+    orderno,
+    quantity,
+    price,
+    quantity * price AS totalAmount
+FROM
+    orderdetails;
+-------------------------------------
+tablebill from join
+SELECT
+    o.orderId,
+    o.orderNo,
+    o.cid,
+    SUM(od.totalbill) AS totalAmount
+FROM
+    orders o
+JOIN
+    orderdetails od ON o.orderId = od.Orderid
+GROUP BY
+    o.orderId, o.orderNo, o.cid;
+------------------------------
+triggers
+-- Create an AFTER INSERT trigger to calculate and update totalbill
+CREATE TRIGGER UpdateTotalBillOnInsert
+ON orderdetails
+AFTER INSERT
+AS
+BEGIN
+    UPDATE od
+    SET od.totalbill = i.quantity * i.price
+    FROM orderdetails od
+    INNER JOIN inserted i ON od.orderdetailsId = i.orderdetailsId;
+END;
+
+-- Create an AFTER UPDATE trigger to recalculate and update totalbill
+CREATE TRIGGER UpdateTotalBillOnUpdate
+ON orderdetails
+AFTER UPDATE
+AS
+BEGIN
+    UPDATE od
+    SET od.totalbill = i.quantity * i.price
+    FROM orderdetails od
+    INNER JOIN inserted i ON od.orderdetailsId = i.orderdetailsId;
+END;
+----------------------------
+
+-- Create an AFTER INSERT trigger to update the stock in the products table
+CREATE TRIGGER UpdateProductStockOnInsert
+ON orderdetails
+AFTER INSERT
+AS
+BEGIN
+    DECLARE @productid INT;
+    DECLARE @quantity INT;
+
+    SELECT @productid = productid, @quantity = quantity
+    FROM inserted;
+
+    UPDATE products
+    SET stock = stock - @quantity
+    WHERE productid = @productid;
+END;
+-----------------------
+-- Insert the first product into the orderdetails table
+INSERT INTO orderdetails (Orderid, productid, orderno, price, quantity)
+VALUES (1, 101, 'ORD12345', 100, 2);
+
+-- Insert the second product into the orderdetails table
+INSERT INTO orderdetails (Orderid, productid, orderno, price, quantity)
+VALUES (1, 102, 'ORD12345', 50, 3);
+---------------------
+SELECT
+    Orderid,
+    orderno,
+    SUM(totalbill) AS totalAmount
+FROM
+    orderdetails
+WHERE
+    Orderid = 1;
+----------------------
+-- Create an AFTER INSERT trigger to update the totalbill in the orderdetails table
+CREATE TRIGGER UpdateTotalBillOnInsert
+ON orderdetails
+AFTER INSERT
+AS
+BEGIN
+    DECLARE @OrderID INT;
+
+    -- Get the OrderID for the newly inserted row
+    SELECT @OrderID = Orderid
+    FROM inserted;
+
+    -- Update the totalbill for the order
+    UPDATE od
+    SET od.totalbill = od.price * od.quantity
+    FROM orderdetails od
+    WHERE od.Orderid = @OrderID;
+END;
+
