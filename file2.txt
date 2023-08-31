@@ -1,1 +1,52 @@
-hello world
+tables
+
+create table customer(
+cid int identity(1,1),
+name varchar(20),
+email varchar(20),
+password varchar(20),
+city varchar(10),
+phoneno varchar(20)
+) ----------------------
+
+create table supplier(
+supplierid int identity(21,1),
+Sname varchar(20),
+Sphone varchar(20),
+Scity varchar(20),
+Smail varchar(20)
+)------------------------
+
+create table category(
+categoryid int identity(51,1),
+categoryName varchar(20),
+)-------------------
+
+create table products(
+productid int identity(101,1),
+productName varchar(20),
+supplierid int,
+categoryid int,
+stock int,
+price int
+)---------------------
+create table orders(
+orderId int identity(201,1),
+cid int,
+orderNo varchar(50),
+paymenttypeid int,
+orderdate date
+) 
+create table paymentType(
+paymentTypeid int identity(301,1),
+PaytypeName varchar(10)
+)---------
+create table orderdetails(
+orderdetailsId int identity(501,1),
+Orderid int,
+productid int,
+orderno varchar(50),
+price int,
+quantity int,
+totalbill int
+)
