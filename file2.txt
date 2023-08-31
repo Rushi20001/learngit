@@ -50,3 +50,45 @@ price int,
 quantity int,
 totalbill int
 )
+---------------------------------------
+-- Insert sample data into the customer table
+INSERT INTO customer (name, email, password, city, phoneno)
+VALUES
+    ('Alice', 'alice@example.com', 'password123', 'New York', '123-456-7890'),
+    ('Bob', 'bob@example.com', 'securepass', 'Los Angeles', '987-654-3210');
+
+-- Insert sample data into the supplier table
+INSERT INTO supplier (Sname, Sphone, Scity, Smail)
+VALUES
+    ('Supplier A', '123-456-7890', 'City A', 'suppliera@example.com'),
+    ('Supplier B', '987-654-3210', 'City B', 'supplierb@example.com');
+
+-- Insert sample data into the category table
+INSERT INTO category (categoryName)
+VALUES
+    ('Electronics'),
+    ('Clothing');
+
+-- Insert sample data into the products table
+INSERT INTO products (productName, supplierid, categoryid, stock, price)
+VALUES
+    ('Laptop', 1, 1, 10, 1000),
+    ('Shirt', 2, 2, 50, 30);
+
+-- Insert sample data into the paymentType table
+INSERT INTO paymentType (PaytypeName)
+VALUES
+    ('Credit Card'),
+    ('Cash');
+
+-- Insert sample data into the orders table
+INSERT INTO orders (cid, orderNo, paymenttypeid, orderdate)
+VALUES
+    (1, 'ORD12345', 1, '2023-08-15'),
+    (2, 'ORD67890', 2, '2023-08-16');
+
+-- Insert sample data into the orderdetails table
+INSERT INTO orderdetails (Orderid, productid, orderno, price, quantity, totalbill)
+VALUES
+    (1, 1, 'ORD12345', 1000, 2, 2000),
+    (2, 2, 'ORD67890', 30, 3, 90);
