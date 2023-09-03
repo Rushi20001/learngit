@@ -1,0 +1,59 @@
+
+create trigger setpayamount
+on orderdetails
+after insert
+as
+begin
+
+ update orderdetails 
+ set totalprice = i.price_per_unit * i.Quantity
+ from inserted i join orderdetails od on i.orderdetailsid=od.orderdetailsid
+ 
+end 
+--------------------------------------------------------------
+
+alter TRIGGER updatepayamount
+ON payment
+AFTER INSERT
+AS
+BEGIN
+    DECLARE @totalAmount DECIMAL;
+    DECLARE @ordersid INT;
+    DECLARE @paymentmethodid INT;
+
+    SELECT @ordersid = ordersid FROM inserted;
+
+    -- Calculate the total amount
+    SELECT @totalAmount = SUM(od.totalprice)
+    FROM inserted i
+    INNER JOIN orderdetails od ON i.ordersid = od.ordersid
+    WHERE od.ordersid = @ordersid;
+
+    -- Get the payment method for this order
+    SELECT @paymentmethodid = pm.paymentmethodid
+    FROM PaymentMethod pm
+    INNER JOIN orders o ON o.ordersid = @ordersid
+    WHERE pm.paymethod = 'card'; -- Replace with your desired payment method
+
+    -- Check if the payment method matches the desired one and apply a discount
+    IF @paymentmethodid = 2 -- Replace with the desired payment method id
+    BEGIN
+        SET @totalAmount = @totalAmount * 0.9; -- 10% discount
+    END;
+
+    -- Check if a payment row already exists for this order
+    IF NOT EXISTS (SELECT 1 FROM payment WHERE ordersid = @ordersid)
+    BEGIN
+        -- Insert a new payment row if one doesn't exist
+        INSERT INTO payment (ordersid, payamount, paymentmethodid, createdon)
+        VALUES (@ordersid, @totalAmount, @paymentmethodid, GETDATE());
+    END
+    ELSE
+    BEGIN
+        -- Update the existing payment row with the new payamount and payment method
+        UPDATE payment
+        SET PayAmount = @totalAmount,
+            paymentmethodid = @paymentmethodid
+        WHERE ordersid = @ordersid;
+    END;
+END;
