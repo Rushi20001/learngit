@@ -1,0 +1,201 @@
+-- Create tables (customer, category, products, orders, orderdetails, payment, seller, review, coupon)
+CREATE TABLE users (
+    Usersid INT IDENTITY(1,1),
+    Usersname VARCHAR(50),
+    UsersAddress VARCHAR(50),
+    UserPhoneNo VARCHAR(20),
+   UserEmail varchar (50),
+   UserPass varchar  (20), 
+    CreatedON DATETIME DEFAULT GETDATE()
+);
+
+CREATE TABLE category (
+    CategoryId INT IDENTITY(101,1),
+    CategoryName VARCHAR(20)
+);
+
+CREATE TABLE products (
+    ProductsId INT IDENTITY(51,1),
+    ProductName VARCHAR(20),
+    Price DECIMAL,
+    Stock INT,
+    CategoryId INT,
+    
+    CreatedON DATETIME DEFAULT GETDATE()
+);
+
+CREATE TABLE orders (
+    OrdersId INT IDENTITY(501,1),
+    CustomerId INT,
+    Orderdate DATETIME,
+    OderStatus BIT,
+    
+    CreatedON DATETIME DEFAULT GETDATE()
+);
+
+CREATE TABLE orderdetails (
+    OrderdetailsId INT IDENTITY(1,1),
+    OrdersId INT,
+    ProductId INT,
+    Quantity INT,
+    Price_per_unit decimal,
+    Totalprice DECIMAL,
+    
+    CreatedON DATETIME DEFAULT GETDATE()
+);
+
+CREATE TABLE payment (
+    PaymentId INT IDENTITY(1001,1),
+    OrderId INT,
+    PayAmount DECIMAL,
+    PaymentmethodId int,
+    
+    CreatedON DATETIME DEFAULT GETDATE()
+);
+
+
+CREATE TABLE PaymentMethod (
+    paymentMethodId INT IDENTITY(1,1),
+   
+    paymethod VARCHAR(20),
+    
+    CreatedON DATETIME DEFAULT GETDATE()
+);
+
+
+CREATE TABLE seller (
+    sellerid INT IDENTITY(1,1),
+    sellername VARCHAR(50),
+    SellerAddress VARCHAR(50),
+    SellerPhoneNo VARCHAR(20),
+    
+    CreatedON DATETIME DEFAULT GETDATE()
+);
+
+CREATE TABLE RATING (
+    ratingid INT IDENTITY(201,1),
+    productid INT,
+    customerid INT,
+    rating INT,
+    CreatedON DATETIME DEFAULT GETDATE()
+);
+
+
+-- Insert data into tables (customer, category, products, orders, orderdetails, seller, review, coupon)
+-- (You can insert data into these tables as needed)
+insert into users (Usersname,UsersAddress,UserPhoneNo,CreatedON,UserEmail,UserPass)values
+('rutu','street no1,pune','999-222',GETDATE(),'r@g.com','123'),('akhilesh','parel,mumbai','999-333',GETDATE(),'ak@g.com','234')
+
+insert into category (CategoryName) values ('mobile'),('LED'),('Gaming')
+
+insert into products (ProductName,Stock,Price,CreatedON,CategoryId)values
+('oneplus nord',30,20000,GETDATE(),101),('Iphone-12',10,40000,GETDATE(),101),('samsung 4k',5,45000,GETDATE(),102)
+
+insert into orders (CustomerId,Orderdate,OderStatus,CreatedON	)values(1,GETDATE(),0,GETDATE()),(1,GETDATE(),0,GETDATE()),
+(2,GETDATE(),0,GETDATE())
+
+insert into orderdetails (OrdersId,ProductId,Quantity,Price_per_unit,Totalprice,CreatedON) values
+(502,53,1,45000,0,GETDATE())
+
+insert into PaymentMethod (paymethod,CreatedON) values('COD',GETDATE()),('CARD',GETDATE())
+
+
+insert into payment (OrdersId,PayAmount,CreatedON,PaymentmethodId) values (502,0,GETDATE(),1)
+create trigger setpayamount
+on orderdetails
+after insert
+as
+begin
+
+ update orderdetails 
+ set totalprice = i.price_per_unit * i.Quantity
+ from inserted i join orderdetails od on i.orderdetailsid=od.orderdetailsid
+ 
+end 
+select * from payment 
+---------------------------------------
+drop trigger totalpaymentamount
+on payment
+after insert
+as
+begin
+
+declare @ordersid int 
+select @ordersid=ordersid from inserted ;
+
+declare @totalamount decimal; 
+
+select @totalamount= sum(od.Totalprice) from inserted i join orderdetails od on i.ordersid=od.ordersid
+where od.ordersid=@ordersid
+
+update payment 
+set payamount=@totalamount
+where ordersid=@ordersid
+end
+-------------------------------------
+--drop TRIGGER updatepayamount
+--ON payment
+--AFTER INSERT
+--AS
+--BEGIN
+--    DECLARE @ordersid INT;
+--    SELECT @ordersid = ordersid FROM inserted;
+    
+--    -- Check if a payment row already exists for this order
+--    IF NOT EXISTS (SELECT 1 FROM payment WHERE ordersid = @ordersid)
+--    BEGIN
+--        DECLARE @totalAmount DECIMAL;
+--        SELECT @totalAmount = SUM(od.totalprice)
+--        FROM inserted i
+--        INNER JOIN orderdetails od ON i.ordersid = od.ordersid
+--        WHERE od.ordersid = @ordersid;
+        
+--        -- Insert a new payment row if one doesn't exist
+--        INSERT INTO payment (ordersid, payamount, paymentmethodid,createdon)
+--        VALUES (@ordersid, @totalAmount, 1,getdate())
+--    END
+    
+--    ELSE
+--    BEGIN
+--        -- Handle the case where a payment row already exists (you can update it or take other action)
+--        -- For example, you can choose to update the payamount here.
+--         UPDATE payment
+--         SET PayAmount =  (SELECT @totalAmount
+--        FROM inserted i
+--        INNER JOIN orderdetails od ON i.ordersid = od.ordersid
+--        WHERE od.ordersid = @ordersid)
+--         WHERE ordersid = @ordersid;
+--    END
+--END;
+----------------------------------------
+
+create TRIGGER updatepayamount
+ON payment
+AFTER INSERT
+AS
+BEGIN
+    DECLARE @ordersid INT;
+    SELECT @ordersid = ordersid FROM inserted;
+    
+    -- Calculate the total amount
+    DECLARE @totalAmount DECIMAL;
+    SELECT @totalAmount = SUM(od.totalprice)
+    FROM inserted i
+    INNER JOIN orderdetails od ON i.ordersid = od.ordersid
+    WHERE od.ordersid = @ordersid;
+    
+    -- Check if a payment row already exists for this order
+    IF NOT EXISTS (SELECT 1 FROM payment WHERE ordersid = @ordersid)
+    BEGIN
+        -- Insert a new payment row if one doesn't exist
+        INSERT INTO payment (ordersid, payamount, paymentmethodid, createdon)
+        VALUES (@ordersid, @totalAmount, 1, GETDATE());
+    END
+    ELSE
+    BEGIN
+        -- Update the existing payment row with the new payamount
+        UPDATE payment
+        SET PayAmount = @totalAmount
+        WHERE ordersid = @ordersid;
+    END;
+END;
